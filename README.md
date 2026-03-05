@@ -1,2 +1,3 @@
-# Classifier_Projects
-Classifiers with machine learning
+# Article predictor 
+German language article predictor using MLP
+
