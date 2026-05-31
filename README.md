@@ -1,4 +1,4 @@
-#German Article Predictor
+## German Article Predictor
 
 An experimental machine learning project designed to evaluate how well neural networks can predict the definite articles (*der, die, das*) of German nouns. This project leverages **TensorFlow** and pre-trained word embeddings from **FastText**.
 
