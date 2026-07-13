@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import re
+import numpy as np
 def get_nomen():
     nomen = pd.read_csv("mit_artikeln.csv")
     nomen = nomen.rename(columns={"ihm": "Nomen", "none": "Artikel"})
@@ -47,3 +48,31 @@ def true_artikel_return(wort, nomen, mapping=dmapping2):
     art = nomen.loc[nomen['Nomen'] == wort]['Artikel'].iloc[0]
     d = mapping[art]
     return d
+
+letters = ['a',  'b'	,'c',	'd',	'e',	'f',	'g',	'h'	,   'i',	'j',	'k',	'l',	'm',
+              	'n',	'o',	'p',	'q',	'r',	's',	't',	'u',	'v',	'w',
+                    	'x',	'y',	'z'	,'ä'	,'ö'	,'ü',	'ß', '0', '-']
+
+def word_prep_rnn(w):
+    w = w.lower()
+    r = list(w)
+    return r
+
+def onehot(cat):
+    n = len(cat)
+    oh = []
+    for i in range(n):
+        vec = [0] * n
+        vec[i] = 1
+        oh.append(vec)
+    oh.append([0]*n)
+    return oh
+
+OneHot = onehot(letters)
+hot_mapping = dict(zip(letters, OneHot))
+
+def hotX(w):
+    r = word_prep_rnn(w)
+    HX = [hot_mapping[letter] for letter in r]
+    #flatHX = [item for sublist in HX for item in sublist] #flatten the list of lists into a vector
+    return np.array(HX, dtype='int8')
