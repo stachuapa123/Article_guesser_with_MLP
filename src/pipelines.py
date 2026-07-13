@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import re
 import numpy as np
+import torch 
+from torch.nn.utils.rnn import pad_sequence
+
 def get_nomen():
     nomen = pd.read_csv("mit_artikeln.csv")
     nomen = nomen.rename(columns={"ihm": "Nomen", "none": "Artikel"})
@@ -11,7 +14,7 @@ def get_nomen():
     nomen.dropna(inplace=True)
     return nomen
 
-def line_read(data): #any word that has number in it is not included
+def line_read(data, verbose=False): #any word that has number in it is not included
     article = {}
     with open(data, "r", encoding="utf-8") as file: 
         content = file.read()
@@ -21,7 +24,8 @@ def line_read(data): #any word that has number in it is not included
             words = line.split()
             if(len(words)>1 and len(words[1]) > 2):
                 if(words[1][0] == '{' and words[1][2] == '}'):
-                    print(words[0])
+                    if verbose:
+                        print(words[0])
                     has_number = any(char.isdigit() for char in words[0])
                     if not has_number:
                         article[words[0]] = words[1][1]
@@ -56,6 +60,9 @@ letters = ['a',  'b'	,'c',	'd',	'e',	'f',	'g',	'h'	,   'i',	'j',	'k',	'l',	'm',
 def word_prep_rnn(w):
     w = w.lower()
     r = list(w)
+    for i in range(len(r)):
+        if r[i] not in letters:
+            r[i] = '0'
     return r
 
 def onehot(cat):
@@ -76,3 +83,14 @@ def hotX(w):
     HX = [hot_mapping[letter] for letter in r]
     #flatHX = [item for sublist in HX for item in sublist] #flatten the list of lists into a vector
     return np.array(HX, dtype='int8')
+
+def hotX_torch(w):
+    r = word_prep_rnn(w)
+    HX = [hot_mapping[letter] for letter in r]
+    #flatHX = [item for sublist in HX for item in sublist] #flatten the list of lists into a vector
+    return torch.tensor(HX)
+
+def makeX(df):
+    X = df['word'].values
+    X = pad_sequence([hotX_torch(w) for w in X], batch_first=True)
+    return X
