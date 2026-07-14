@@ -16,6 +16,7 @@ def get_nomen():
 
 def line_read(data, verbose=False): #any word that has number in it is not included
     article = {}
+    types = ('m', 'f', 'n')
     with open(data, "r", encoding="utf-8") as file: 
         content = file.read()
         ct = 0
@@ -27,7 +28,7 @@ def line_read(data, verbose=False): #any word that has number in it is not inclu
                     if verbose:
                         print(words[0])
                     has_number = any(char.isdigit() for char in words[0])
-                    if not has_number:
+                    if not has_number and words[1][1] in types:
                         article[words[0]] = words[1][1]
                     
                     ct+=1
@@ -90,7 +91,12 @@ def hotX_torch(w):
     #flatHX = [item for sublist in HX for item in sublist] #flatten the list of lists into a vector
     return torch.tensor(HX)
 
-def makeX(df):
+article_to_idx = {"m": 0, "f": 1, "n": 2}
+
+def makeXy(df):
     X = df['word'].values
     X = pad_sequence([hotX_torch(w) for w in X], batch_first=True)
-    return X
+    y = df['article'].values
+    y = [article_to_idx[q] for q in y]
+    return X, y
+
