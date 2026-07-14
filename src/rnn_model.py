@@ -1,7 +1,8 @@
 import torch 
 from torch.utils.data import Dataset
 import torch.nn as nn
-import pipelines as P
+from src import pipelines as P
+import torchmetrics
 
 V_len = len(P.letters)
 class ArticleDataset(Dataset):
@@ -18,19 +19,19 @@ class ArticleDataset(Dataset):
         return self.X[idx], self.y[idx]
     
 class ArticleLSTM(nn.Module):
-    def __init__(self, input_size, hidden_size, num_classes=3):
+    def __init__(self, input_size = V_len, hidden_size = 64, num_classes=3):
         super().__init__()
         self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, batch_first=True)
         self.output = nn.Linear(hidden_size, num_classes)
 
-    def forward(self, x, lengths):
+    def forward(self, x):
+        x=x.float()
+        lengths = (x.sum(dim=2) != 0).sum(dim=1).cpu()
         packed = nn.utils.rnn.pack_padded_sequence(x, lengths, batch_first=True, enforce_sorted=False)
         tick_output, (hidden, cell) = self.lstm(packed)
         out = self.output(hidden[-1])
         return out
-    
 
-import torchmetrics
 
 def evaluate_tm(device, model, data_loader, metric):
     model.eval()
@@ -43,7 +44,7 @@ def evaluate_tm(device, model, data_loader, metric):
     return metric.compute()
 
 def train(device, model, optimizer, loss_fn, metric, train_loader, valid_loader,
-          n_epochs, patience=2, factor=0.5, epoch_callback=None):
+          n_epochs, patience=1, factor=0.25, epoch_callback=None):
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="max", patience=patience, factor=factor)
     history = {"train_losses": [], "train_metrics": [], "valid_metrics": []}
@@ -68,10 +69,10 @@ def train(device, model, optimizer, loss_fn, metric, train_loader, valid_loader,
             print(f", {train_metric=:.2%}", end="")
         history["train_losses"].append(total_loss / len(train_loader))
         history["train_metrics"].append(train_metric)
-        val_metric = evaluate_tm(model, valid_loader, metric).item()
+        val_metric = evaluate_tm(device, model, valid_loader, metric).item()
         history["valid_metrics"].append(val_metric)
         scheduler.step(val_metric)
-        print(f"\rEpoch {epoch + 1}/{n_epochs},                      "
+        print(f"\rEpoch {epoch + 1}/{n_epochs},"
               f"train loss: {history['train_losses'][-1]:.4f}, "
               f"train metric: {history['train_metrics'][-1]:.2%}, "
               f"valid metric: {history['valid_metrics'][-1]:.2%}")

@@ -74,6 +74,7 @@ def onehot(cat):
         vec[i] = 1
         oh.append(vec)
     oh.append([0]*n)
+    #return torch.tensor(oh).float()
     return oh
 
 OneHot = onehot(letters)
